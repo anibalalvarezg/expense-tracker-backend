@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
@@ -17,65 +18,76 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(new ErrorResponse(
-                        404,
-                        "Not Found",
-                        ex.getMessage(),
-                        LocalDateTime.now()
-                ));
+                .body(ErrorResponse.builder()
+                        .status(404)
+                        .error("Not Found")
+                        .message(ex.getMessage())
+                        .timestamp(LocalDateTime.now())
+                        .build());
     }
 
     // Sin permiso → 403
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<ErrorResponse> handleUnauthorized(UnauthorizedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(new ErrorResponse(
-                        403,
-                        "Forbidden",
-                        ex.getMessage(),
-                        LocalDateTime.now()
-                ));
+                .body(ErrorResponse.builder()
+                        .status(403)
+                        .error("Forbidden")
+                        .message(ex.getMessage())
+                        .timestamp(LocalDateTime.now())
+                        .build());
     }
 
     // Email ya existe → 409
     @ExceptionHandler(EmailAlreadyExistsException.class)
     public ResponseEntity<ErrorResponse> handleEmailExists(EmailAlreadyExistsException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(new ErrorResponse(
-                        409,
-                        "Conflict",
-                        ex.getMessage(),
-                        LocalDateTime.now()
-                ));
+                .body(ErrorResponse.builder()
+                        .status(409)
+                        .error("Conflict")
+                        .message(ex.getMessage())
+                        .timestamp(LocalDateTime.now())
+                        .build());
     }
 
     // Validaciones fallidas → 400
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
-        String message = ex.getBindingResult()
+
+        // Agrupa todos los errores por campo
+        Map<String, String> fields = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
-                .map(FieldError::getDefaultMessage)
+                .collect(Collectors.toMap(
+                        FieldError::getField,
+                        FieldError::getDefaultMessage,
+                        // Si hay dos errores en el mismo campo, queda el primero
+                        (first, second) -> first
+                ));
+
+        // Mensaje general resume todos los campos
+        String message = fields.values().stream()
                 .collect(Collectors.joining(", "));
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new ErrorResponse(
-                        400,
-                        "Bad Request",
-                        message,
-                        LocalDateTime.now()
-                ));
+                .body(ErrorResponse.builder()
+                        .status(400)
+                        .error("Bad Request")
+                        .message(message)
+                        .timestamp(LocalDateTime.now())
+                        .fields(fields)
+                        .build());
     }
 
     // Cualquier otro error → 500
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse(
-                        500,
-                        "Internal Server Error",
-                        "Ocurrió un error inesperado",
-                        LocalDateTime.now()
-                ));
+                .body(ErrorResponse.builder()
+                        .status(500)
+                        .error("Internal Server Error")
+                        .message("Ocurrió un error inesperado")
+                        .timestamp(LocalDateTime.now())
+                        .build());
     }
 }

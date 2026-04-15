@@ -9,12 +9,13 @@ import java.time.LocalDate;
 public class ExpenseRequest {
 
     @NotNull(message = "El monto es requerido")
-    @Positive(message = "El monto debe ser positivo")
+    @Positive(message = "El monto debe ser mayor a cero")
     private BigDecimal amount;
 
     @NotNull(message = "La categoría es requerida")
     private Long categoryId;
 
+    @Size(max = 255, message = "La descripción no puede superar 255 caracteres")
     private String description;
 
     @NotNull(message = "La fecha es requerida")
