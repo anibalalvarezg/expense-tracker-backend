@@ -8,23 +8,28 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/api/budgets")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
+@Tag(name = "Budgets", description = "Endpoints de presupuesto mensual")
+@SecurityRequirement(name = "Bearer Auth")
 public class BudgetController {
 
     private final BudgetService budgetService;
 
-    // POST /api/budgets
+    @Operation(summary = "Crear o actualizar presupuesto")
     @PostMapping
     public ResponseEntity<BudgetResponse> save(
             @Valid @RequestBody BudgetRequest request) {
         return ResponseEntity.ok(budgetService.save(request));
     }
 
-    // GET /api/budgets?year=2026&month=4
+    @Operation(summary = "Ver presupuesto del mes")
     @GetMapping
     public ResponseEntity<BudgetResponse> getByMonth(
             @RequestParam int year,
@@ -32,7 +37,7 @@ public class BudgetController {
         return ResponseEntity.ok(budgetService.getByMonth(year, month));
     }
 
-    // GET /api/budgets/status?year=2026&month=4
+    @Operation(summary = "Ver estado del presupuesto")
     @GetMapping("/status")
     public ResponseEntity<BudgetStatusResponse> getStatus(
             @RequestParam int year,
