@@ -2,6 +2,7 @@ package com.alvarezg.expenses.controller;
 
 import com.alvarezg.expenses.dto.AuthResponse;
 import com.alvarezg.expenses.dto.LoginRequest;
+import com.alvarezg.expenses.dto.RefreshRequest;
 import com.alvarezg.expenses.dto.RegisterRequest;
 import com.alvarezg.expenses.service.AuthService;
 import jakarta.validation.Valid;
@@ -12,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*") // permite llamadas desde Angular
+@CrossOrigin(origins = "*")
 public class AuthController {
 
     private final AuthService authService;
@@ -25,5 +26,16 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshRequest request) {
+        return ResponseEntity.ok(authService.refresh(request));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@Valid @RequestBody RefreshRequest request) {
+        authService.logout(request);
+        return ResponseEntity.noContent().build();
     }
 }

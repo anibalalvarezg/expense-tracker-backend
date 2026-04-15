@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.UUID;
 
 @Component
 public class JwtUtil {
@@ -21,7 +22,7 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(secret.getBytes());
     }
 
-    // Genera el token con el email del usuario
+    // Genera el Access Token
     public String generateToken(String email) {
         return Jwts.builder()
                 .subject(email)
@@ -31,7 +32,11 @@ public class JwtUtil {
                 .compact();
     }
 
-    // Extrae el email del token
+    // Genera el Refresh Token — es un UUID aleatorio
+    public String generateRefreshToken() {
+        return UUID.randomUUID().toString();
+    }
+
     public String extractEmail(String token) {
         return Jwts.parser()
                 .verifyWith(getKey())
@@ -41,7 +46,6 @@ public class JwtUtil {
                 .getSubject();
     }
 
-    // Valida el token
     public boolean isValid(String token) {
         try {
             Jwts.parser()
