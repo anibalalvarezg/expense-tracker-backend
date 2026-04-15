@@ -3,6 +3,8 @@ package com.alvarezg.expenses.service;
 import com.alvarezg.expenses.dto.ExpenseRequest;
 import com.alvarezg.expenses.dto.ExpenseResponse;
 import com.alvarezg.expenses.dto.ExpenseSummaryResponse;
+import com.alvarezg.expenses.exception.ResourceNotFoundException;
+import com.alvarezg.expenses.exception.UnauthorizedException;
 import com.alvarezg.expenses.model.Category;
 import com.alvarezg.expenses.model.Expense;
 import com.alvarezg.expenses.model.User;
@@ -34,7 +36,7 @@ public class ExpenseService {
         String email = SecurityContextHolder.getContext()
                 .getAuthentication().getName();
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
     }
 
     // Mapear Expense → ExpenseResponse
@@ -75,7 +77,7 @@ public class ExpenseService {
         User user = getCurrentUser();
 
         Category category = categoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Categoría no encontrada"));
 
         Expense expense = Expense.builder()
                 .user(user)
@@ -93,15 +95,15 @@ public class ExpenseService {
         User user = getCurrentUser();
 
         Expense expense = expenseRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Gasto no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Gasto no encontrado"));
 
         // Verificar que el gasto pertenece al usuario
         if (!expense.getUser().getId().equals(user.getId())) {
-            throw new RuntimeException("No tienes permiso para editar este gasto");
+            throw new UnauthorizedException("No tienes permiso para editar este gasto");
         }
 
         Category category = categoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Categoría no encontrada"));
 
         expense.setAmount(request.getAmount());
         expense.setDescription(request.getDescription());
@@ -116,10 +118,10 @@ public class ExpenseService {
         User user = getCurrentUser();
 
         Expense expense = expenseRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Gasto no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Gasto no encontrado"));
 
         if (!expense.getUser().getId().equals(user.getId())) {
-            throw new RuntimeException("No tienes permiso para eliminar este gasto");
+            throw new UnauthorizedException("No tienes permiso para eliminar este gasto");
         }
 
         expenseRepository.delete(expense);

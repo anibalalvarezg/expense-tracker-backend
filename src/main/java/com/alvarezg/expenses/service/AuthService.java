@@ -3,6 +3,8 @@ package com.alvarezg.expenses.service;
 import com.alvarezg.expenses.dto.AuthResponse;
 import com.alvarezg.expenses.dto.LoginRequest;
 import com.alvarezg.expenses.dto.RegisterRequest;
+import com.alvarezg.expenses.exception.EmailAlreadyExistsException;
+import com.alvarezg.expenses.exception.ResourceNotFoundException;
 import com.alvarezg.expenses.model.User;
 import com.alvarezg.expenses.repository.UserRepository;
 import com.alvarezg.expenses.security.JwtUtil;
@@ -24,7 +26,7 @@ public class AuthService {
     public AuthResponse register(RegisterRequest request) {
         // Verificar si el email ya existe
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("El email ya está registrado");
+            throw new EmailAlreadyExistsException("El email ya está registrado");
         }
 
         // Crear y guardar el usuario
@@ -52,7 +54,7 @@ public class AuthService {
 
         // Si llegamos aquí, las credenciales son correctas
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
         String token = jwtUtil.generateToken(user.getEmail());
         return new AuthResponse(token, user.getName(), user.getEmail());
