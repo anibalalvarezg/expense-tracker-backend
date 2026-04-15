@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+import java.time.LocalDate;
 
 @Service
 @RequiredArgsConstructor
@@ -78,15 +79,14 @@ public class BudgetService {
         );
     }
 
-    // Ver estado del presupuesto — cuánto gasté vs cuánto tengo
     public BudgetStatusResponse getStatus(int year, int month) {
         User user = getCurrentUser();
 
+        // Intenta encontrar el budget del mes actual
+        // Si no existe, intenta copiarlo del mes anterior (lazy creation)
         Budget budget = budgetRepository
                 .findByUserAndMonthAndYearAndCategoryIsNull(user, month, year)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "No hay presupuesto definido para " + month + "/" + year
-                ));
+                .orElseGet(() -> createFromPreviousMonth(user, month, year));
 
         // Total gastado en el mes
         List<Object[]> summary = expenseRepository.sumByCategory(user.getId(), year, month);
@@ -112,5 +112,29 @@ public class BudgetService {
                 month,
                 year
         );
+    }
+
+    // Método privado — copia el budget del mes anterior
+    private Budget createFromPreviousMonth(User user, int month, int year) {
+        LocalDate date = LocalDate.of(year, month, 1).minusMonths(1);
+
+        return budgetRepository
+                .findByUserAndMonthAndYearAndCategoryIsNull(
+                        user, date.getMonthValue(), date.getYear()
+                )
+                .map(previous -> {
+                    Budget newBudget = Budget.builder()
+                            .user(user)
+                            .amount(previous.getAmount())
+                            .month(month)
+                            .year(year)
+                            .category(null)
+                            .build();
+                    return budgetRepository.save(newBudget);
+                })
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No hay presupuesto definido para " + month + "/" + year +
+                                ". Por favor crea uno manualmente."
+                ));
     }
 }
