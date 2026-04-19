@@ -6,11 +6,16 @@ import com.alvarezg.expenses.dto.ExpenseSummaryResponse;
 import com.alvarezg.expenses.service.ExpenseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.io.IOException;
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -43,6 +48,20 @@ public class ExpenseController {
             @RequestParam int year,
             @RequestParam int month) {
         return ResponseEntity.ok(expenseService.getSummary(year, month));
+    }
+
+    @Operation(summary = "Exportar gastos a Excel por rango de fechas")
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> exportToExcel(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) throws IOException {
+        byte[] excelBytes = expenseService.exportToExcel(startDate, endDate);
+        String filename = "gastos_" + startDate + "_" + endDate + ".xlsx";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.parseMediaType(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(excelBytes);
     }
 
     @Operation(summary = "Crear gasto")
